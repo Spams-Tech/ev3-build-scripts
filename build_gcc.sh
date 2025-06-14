@@ -66,7 +66,7 @@ build_gcc() {
 
     # 编译
     log_info "Compiling GCC..."
-    make -j24
+    make -j$(nproc)
 
     # 安装
     log_info "Installing GCC..."
