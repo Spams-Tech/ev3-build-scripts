@@ -82,8 +82,8 @@ show_completion_info() {
     log_info "To install the packages, follow these steps:"
     log_info "1. Copy all .deb files to your EV3 device / Docker container."
     log_info "2. Install libraries first: sudo dpkg -i --force-overwrite <...>.deb"
-    log_info "3. Install Python: sudo dpkg -i --force-overwrite python3*armel.deb"
-    log_info "4. Install GCC: sudo dpkg -i --force-overwrite gcc*armel.deb"
+    log_info "3. Install Python: sudo dpkg -i --force-overwrite python3*.deb"
+    log_info "4. Install GCC: sudo dpkg -i --force-overwrite gcc*.deb"
 }
 
 # 执行各个构建步骤

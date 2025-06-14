@@ -120,25 +120,25 @@ EOF
 # 创建所有库的 DEB 包
 log_section "Creating DEB packages for all libraries"
 
-create_library_deb "zlib" "1.3.1-1" "Compression library - runtime" "libc6" "zlib1g"
+create_library_deb "zlib" "1.3.1-1" "Compression library - runtime" "libc6" "zlib1g-spams"
 
-create_library_deb "openssl" "3.5.0-1" "Secure Sockets Layer toolkit - runtime" "libc6" "libssl3"
+create_library_deb "openssl" "3.5.0-1" "Secure Sockets Layer toolkit - runtime" "libc6" "libssl3-spams"
 
-create_library_deb "libffi" "3.4.8-1" "Foreign Function Interface library runtime" "libc6" "libffi7"
+create_library_deb "libffi" "3.4.8-1" "Foreign Function Interface library runtime" "libc6" "libffi8-spams"
 
-create_library_deb "sqlite" "3.50.0-1" "SQLite 3 shared library" "libc6" "libsqlite3-0"
+create_library_deb "sqlite" "3.50.0-1" "SQLite 3 shared library" "libc6" "libsqlite3-0-spams"
 
-create_library_deb "ncurses" "6.5-1" "shared libraries for terminal handling" "libc6" "libncurses6"
+create_library_deb "ncurses" "6.5-1" "shared libraries for terminal handling" "libc6" "libncurses6-spams"
 
-create_library_deb "readline" "8.2-1" "GNU readline and history libraries, runtime" "libc6, libncurses6" "libreadline8"
+create_library_deb "readline" "8.2-1" "GNU readline and history libraries, runtime" "libc6, libncurses6-spams" "libreadline8-spams"
 
-create_library_deb "bzip2" "1.0.8-1" "high-quality block-sorting file compressor library - runtime" "libc6" "libbz2-1.0"
+create_library_deb "bzip2" "1.0.8-1" "high-quality block-sorting file compressor library - runtime" "libc6" "libbz2-1.0-spams"
 
-create_library_deb "xz" "5.8.1-1" "XZ-format compression library" "libc6" "liblzma5"
+create_library_deb "xz" "5.8.1-1" "XZ-format compression library" "libc6" "liblzma5-spams"
 
-create_library_deb "gdbm" "1.25-1" "GNU dbm database routines (runtime version)" "libc6" "libgdbm6"
+create_library_deb "gdbm" "1.25-1" "GNU dbm database routines (runtime version)" "libc6" "libgdbm6-spams"
 
-create_library_deb "util-linux" "2.40.4-1" "miscellaneous system utilities - runtime libraries" "libc6" "libuuid1"
+create_library_deb "util-linux" "2.40.4-1" "miscellaneous system utilities - runtime libraries" "libc6" "libuuid1-spams"
 
 log_success "All DEB packages created successfully!"
 log_info "Packages location: $CROSS_BASE/packages/"

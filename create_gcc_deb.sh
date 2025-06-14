@@ -31,7 +31,7 @@ create_gcc_deb() {
     # 创建控制文件
     log_info "Creating control file..."
     cat > "$pkg_dir/DEBIAN/control" << EOF
-Package: gcc-cross-armel
+Package: gcc-spams
 Version: ${gcc_version}
 Section: devel
 Priority: optional
@@ -42,7 +42,7 @@ Depends: libc6
 Description: GNU C compiler (cross-compiled for ARM)
  This is the GNU C compiler, a fairly portable optimizing compiler for C.
  This package contains a version of GCC that can compile code for ARM
- architecture (armel) but runs on the host machine.
+ architecture (armel).
 EOF
 
     # 创建 postinst 脚本

@@ -43,14 +43,14 @@ create_python_deb() {
     # 创建控制文件
     log_info "Creating control file..."
     cat > "$pkg_dir/DEBIAN/control" << EOF
-Package: python3-cross-armel
+Package: python3-spams
 Version: ${python_version}
 Section: python
 Priority: optional
 Architecture: armel
 Maintainer: spamstech <hi@spams.tech>
 Installed-Size: ${installed_size}
-Depends: libc6, libzlib-cross-armel, libopenssl-cross-armel, liblibffi-cross-armel, libsqlite-cross-armel, libncurses-cross-armel, libreadline-cross-armel, libbzip2-cross-armel, libxz-cross-armel, libgdbm-cross-armel
+Depends: libc6, zlib1g-spams, libssl3-spams, libffi8-spams, libsqlite3-0-spams, libncurses6-spams, libreadline8-spams, libbz2-1.0-spams, liblzma5-spams, libgdbm6-spams, libuuid1-spams
 Description: Python 3.13 interpreter (cross-compiled for ARM)
  Python is an interpreted, interactive, object-oriented programming
  language. This package contains Python 3.13 interpreter cross-compiled
