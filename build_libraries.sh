@@ -175,8 +175,9 @@ build_bzip2() {
         blocksort.o huffman.o crctable.o randtable.o compress.o decompress.o bzlib.o
     
     cd "$install_dir/lib"
+    ln -sf libbz2.so.1.0.8 libbz2.so.1.0
     ln -sf libbz2.so.1.0.8 libbz2.so.1
-    ln -sf libbz2.so.1 libbz2.so
+    ln -sf libbz2.so.1.0.8 libbz2.so
     
     find "$install_dir" -type f > "$CROSS_BASE/install/bzip2_files.list"
     log_info "File list saved to $CROSS_BASE/install/bzip2_files.list"
