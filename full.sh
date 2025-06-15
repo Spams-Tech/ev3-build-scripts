@@ -31,43 +31,76 @@ show_menu() {
     echo ""
     log_section "Build Options"
     echo "1) Libraries only"
-    echo "2) Libraries and Python"
-    echo "3) Libraries and GCC"
-    echo "4) GCC only"
-    echo "5) All (Libraries, Python and GCC)"
+    echo "2) GCC only"
+    echo "3) Libraries and Python"
+    echo "4) All (Libraries, Python and GCC)"
     echo ""
-    echo -n "Please choose [1-5]: "
+    echo -n "Please choose [1-4]: "
     read -r choice
+}
+
+# 询问是否编译OpenBLAS
+ask_openblas() {
+    echo ""
+    log_section "OpenBLAS Option"
+    echo "Do you want to build OpenBLAS?"
+    echo "1) Yes"
+    echo "2) No"
+    echo ""
+    echo -n "Please choose [1-2]: "
+    read -r openblas_choice
 }
 
 # 构建依赖库
 build_libraries() {
-    log_section "Step 1: Setting up the environment"
-    bash setup_environment.sh
+    ask_openblas
 
-    log_section "Step 2: Building libraries"
+    case $openblas_choice in
+        1)
+            log_info "Building OpenBLAS as requested."
+            build_openblas
+            ;;
+        2)
+            log_info "Skipping OpenBLAS build."
+            ;;
+        *)
+            log_error "Invalid choice: $openblas_choice"
+            exit 1
+            ;;
+    esac
+
+    log_section "Step L-1: Building libraries"
     bash build_libraries.sh
     
-    log_section "Step 3: Creating DEB packages for libraries"
+    log_section "Step L-2: Creating DEB packages for libraries"
     bash create_libraries_deb.sh
 }
 
 # 构建Python
 build_python() {
-    log_section "Step 4: Building Python"
+    log_section "Step P-1: Building Python"
     bash build_python.sh
     
-    log_section "Step 5: Creating DEB package for Python"
+    log_section "Step P-2: Creating DEB package for Python"
     bash create_python_deb.sh
 }
 
 # 构建GCC
 build_gcc() {
-    log_section "Step 6: Building GCC"
+    log_section "Step G-1: Building GCC"
     bash build_gcc.sh
 
-    log_section "Step 7: Creating DEB package for GCC"
+    log_section "Step G-2: Creating DEB package for GCC"
     bash create_gcc_deb.sh
+}
+
+# 构建OpenBLAS
+build_openblas() {
+    log_section "Step L+-1: Building OpenBLAS"
+    bash build_openblas.sh
+
+    log_section "Step L+-2: Creating DEB package for OpenBLAS"
+    bash create_openblas_deb.sh
 }
 
 # 显示构建完成信息
@@ -93,6 +126,13 @@ main() {
     log_info "For Docker image: growflavor/ev3images:ev3dev10imgv02b"
     log_info "Host: $(uname -n)"
     log_info "Date: $(date)"
+    log_warning "THIS SCRIPT IS EXPERIMENTAL AND MAY NOT WORK AS EXPECTED!"
+    log_warning "TO INSTALL THE GENERATED PACKAGES,"
+    log_warning "YOU HAVE TO OVERWRITE SOME SYSTEM PACKAGES,"
+    log_warning "WHICH MAY CAUSE SYSTEM INSTABILITY OR BREAKAGE."
+    log_warning "PLEASE PROCEED AT YOUR OWN RISK!"
+    log_info "Press Enter to continue... or Ctrl+C to exit."
+    read -r
 
     check_prerequisites
 
@@ -104,22 +144,15 @@ main() {
             build_libraries
             ;;
         2)
+            log_info "Choice: GCC only"
+            build_gcc
+            ;;
+        3)
             log_info "Choice: Libraries and Python"
             build_libraries
             build_python
             ;;
-        3)
-            log_info "Choice: Libraries and GCC"
-            build_libraries
-            build_gcc
-            ;;
         4)
-            log_info "Choice: GCC only"
-            log_section "Step 1: Setting up the environment"
-            bash setup_environment.sh
-            build_gcc
-            ;;
-        5)
             log_info "Choice: All (Libraries, Python and GCC)"
             build_libraries
             build_python
