@@ -39,7 +39,7 @@ build_gcc() {
     log_info "Configuring GCC..."
     "$src_dir/configure" \
         --with-pkgversion='Spams 13.3.0' \
-        --with-bugurl=file:///usr/share/doc/gcc-13/README.Bugs \
+        --with-bugurl=https://github.com/Spam-Tech/ev3-build-scripts \
         --enable-languages=c,c++,fortran \
         --program-suffix=-13 \
         --enable-shared \

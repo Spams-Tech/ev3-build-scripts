@@ -52,6 +52,13 @@ EOF
 set -e
 
 if [ "$1" = "configure" ]; then
+    # 更新系统 libstdc++ 库文件
+    if [ -d "/usr/lib/arm-linux-gnueabi" ]; then
+        cp -f /usr/local/lib/libstdc++* /usr/lib/arm-linux-gnueabi/
+        chmod 644 /usr/lib/arm-linux-gnueabi/libstdc++.so*
+    fi
+
+    # 更新库缓存
     ldconfig
 fi
 EOF
