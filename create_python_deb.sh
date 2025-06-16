@@ -5,7 +5,9 @@ set -e
 source ./setup_environment.sh
 
 create_python_deb() {
-    local python_version="3.13.5"
+    local python_version="${PYTHON_VERSION}"
+    local python_major_version=$(echo "${python_version}" | cut -d. -f1,2)
+
     local install_dir="$CROSS_BASE/install/python"
     local pkg_dir="$CROSS_BASE/packages/python3_${python_version}_armel"
 
@@ -51,9 +53,9 @@ Architecture: armel
 Maintainer: spamstech <hi@spams.tech>
 Installed-Size: ${installed_size}
 Depends: libc6, zlib1g-spams, libssl3-spams, libffi8-spams, libsqlite3-0-spams, libncurses6-spams, libreadline8-spams, libbz2-1.0-spams, liblzma5-spams, libgdbm6-spams, libuuid1-spams
-Description: Python 3.13 interpreter (cross-compiled for ARM)
+Description: Python ${python_version} interpreter (cross-compiled for ARM)
  Python is an interpreted, interactive, object-oriented programming
- language. This package contains Python 3.13 interpreter cross-compiled
+ language. This package contains Python ${python_version} interpreter cross-compiled
  for ARM architecture (armel).
  .
  This package includes the Python interpreter, standard library modules,
@@ -62,15 +64,15 @@ EOF
 
     # 创建 postinst 脚本
     log_info "Creating postinst script..."
-    cat > "$pkg_dir/DEBIAN/postinst" << 'EOF'
+    cat > "$pkg_dir/DEBIAN/postinst" << EOF
 #!/bin/bash
 set -e
 
-if [ "$1" = "configure" ]; then
+if [ "\$1" = "configure" ]; then
     ldconfig
 
-    if [ -x /usr/bin/python3.13 ]; then
-        /usr/bin/python3.13 -m compileall -q /usr/lib/python3.13 2>/dev/null || true
+    if [ -x /usr/bin/python${python_major_version} ]; then
+        /usr/bin/python${python_major_version} -m compileall -q /usr/lib/python${python_major_version} 2>/dev/null || true
     fi
 fi
 EOF
@@ -78,13 +80,13 @@ EOF
 
     # 创建 prerm 脚本
     log_info "Creating prerm script..."
-    cat > "$pkg_dir/DEBIAN/prerm" << 'EOF'
+    cat > "$pkg_dir/DEBIAN/prerm" << EOF
 #!/bin/bash
 set -e
 
-if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
-    find /usr/lib/python3.13 -name "*.pyc" -delete 2>/dev/null || true
-    find /usr/lib/python3.13 -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+if [ "\$1" = "remove" ] || [ "\$1" = "purge" ]; then
+    find /usr/lib/python${python_major_version} -name "*.pyc" -delete 2>/dev/null || true
+    find /usr/lib/python${python_major_version} -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 fi
 EOF
     chmod 755 "$pkg_dir/DEBIAN/prerm"
