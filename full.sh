@@ -2,6 +2,16 @@
 
 set -e
 
+handle_interrupt() {
+    echo ""
+    log_error "Build interrupted by user (Ctrl+C)."
+    log_info "The build logs have been saved to $LOG_FILE."
+    exit 130
+}
+
+# 注册SIGINT信号处理
+trap handle_interrupt SIGINT
+
 export LOG_DIR=~/cross-compile/logs
 export LOG_FILE="$LOG_DIR/build_$(date +%Y%m%d_%H%M%S).log"
 
@@ -58,8 +68,14 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -j|--jobs)
-            JOBS="$2"
-            shift 2
+            if [[ $# -gt 1 ]] && [[ $2 =~ ^[0-9]+$ ]]; then
+                JOBS="$2"
+                shift 2
+            else
+                log_error "-j/--jobs requires a numeric argument!"
+                show_help
+                exit 1
+            fi
             ;;
         -q|--quiet)
             VERBOSE=0
@@ -67,7 +83,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -l|--libraries)
             if [ -n "$BUILD_MODE" ]; then
-                log_error "-l, -g, -p, -a cannot be used together!"
+                log_error "-l/--libraries, -g/--gcc, -p/--python, -a/--all cannot be used together!"
                 show_help
                 exit 1
             fi
@@ -76,7 +92,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -g|--gcc)
             if [ -n "$BUILD_MODE" ]; then
-                log_error "-l, -g, -p, -a cannot be used together!"
+                log_error "-l/--libraries, -g/--gcc, -p/--python, -a/--all cannot be used together!"
                 show_help
                 exit 1
             fi
@@ -85,7 +101,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -p|--python)
             if [ -n "$BUILD_MODE" ]; then
-                log_error "-l, -g, -p, -a cannot be used together!"
+                log_error "-l/--libraries, -g/--gcc, -p/--python, -a/--all cannot be used together!"
                 show_help
                 exit 1
             fi
@@ -94,7 +110,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -a|--all)
             if [ -n "$BUILD_MODE" ]; then
-                log_error "-l, -g, -p, -a cannot be used together!"
+                log_error "-l/--libraries, -g/--gcc, -p/--python, -a/--all cannot be used together!"
                 show_help
                 exit 1
             fi
