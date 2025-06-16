@@ -27,26 +27,54 @@ These scripts target the following environment:
 - util-linux 2.40.4 (used only for libuuid)
 - OpenBLAS 0.3.29 [Optional]
 
-## Usage
+## Prerequisites
 
-0. This script is only tested on Ubuntu 22.04 and Ubuntu 24.04. It may not work on other distributions without modification.
+1. This script is only tested on Ubuntu 22.04 and Ubuntu 24.04. It may not work on other distributions without modification.
    Make sure you have the following packages installed:
    ```
    sudo apt install -y \
        wget tar rsync \
-       build-essential
+       build-essential dpkg-dev
    ```
    
-1. Ensure you have the necessary cross-compilation toolchain `arm-ev3-linux-gnueabi-*` installed.
+2. Ensure you have the necessary cross-compilation toolchain `arm-ev3-linux-gnueabi-*` installed.
    You can create it using **crosstool-ng**, and add `$HOME/x-tools/arm-ev3-linux-gnueabi/bin` to your PATH.
-   
 
-2. Run the main script:
-   ```
-   chmod +x full.sh
-   ./full.sh
-   ```
-   Follow the prompts to select the components you want to build. The script will download, configure, and compile the selected packages.
+# Usage
+
+The main script (`full.sh`) supports several command line options:
+
+```
+Usage: ./full.sh [OPTIONS]
+
+Available options:
+  -h, --help            Display this help message
+  -j, --jobs N          Set the number of -j to N (default: number of CPU cores)
+  -q, --quiet           Build in quiet mode (default: no)
+  -l, --libraries       Build only libraries
+  -g, --gcc             Build only GCC
+  -p, --python          Build libraries and Python
+  -a, --all             Build all components (libraries, Python, and GCC)
+  -o, --openblas        Also build OpenBLAS (default: no)
+```
+
+### Examples
+
+```bash
+# Display an interactive menu
+./full.sh
+
+# Build all components with 8 parallel jobs and include OpenBLAS
+./full.sh -a -j 8 -o
+
+# Build only libraries in quiet mode
+./full.sh -l -q
+```
+
+### Interactive Mode
+
+If you run the script without any build mode option (`-l`, `-g`, `-p`, `-a`), it will display an interactive menu for you to select which components to build.
+The `-j N, --jobs N`, `-q, --quiet`, `-o, --openblas` options are only effective when used with a build mode option mentioned above. If you only set them, you have to choose the build mode interactively later.
 
 ## Installation Instructions
 
@@ -58,6 +86,10 @@ To install the packages, follow these steps:
 3. Install Python: `sudo dpkg -i --force-overwrite python3*.deb`
 4. Install GCC: `sudo dpkg -i --force-overwrite gcc*.deb`
 
+## Logs
+
+Build logs are saved to `~/cross-compile/logs/` directory, with the format `build_YYYYMMDD_HHMMSS.log`.
+
 ## Warning
 
 These scripts are **EXPERIMENTAL** and may not work as expected. **Installing the generated packages will overwrite some system packages, which may cause system instability or breakage. Proceed at your own risk.**
@@ -65,3 +97,7 @@ These scripts are **EXPERIMENTAL** and may not work as expected. **Installing th
 ## License
 
 **MIT License**, see `LICENSE` file for details.
+
+## Contributing
+
+If you find any issues or have suggestions for improvements, feel free to open an [issue](https://github.com/Spams-Tech/ev3-build-scripts/issues) or submit a [pull request](https://github.com/Spams-Tech/ev3-build-scripts/pulls).
