@@ -5,21 +5,18 @@ set -e
 source ./setup_environment.sh
 
 build_gcc() {
-    log_section "Building GCC 13.3.0 for host machine"
+    log_section "Building GCC ${GCC_VERSION} for host machine"
 
-    local gcc_version="13.3.0"  # 更新为要求的13.3版本
+    local gcc_version="${GCC_VERSION}"  # 从配置文件获取版本
     local src_dir="$CROSS_BASE/src/gcc"
     local build_dir="$CROSS_BASE/build/gcc"
     local install_dir="$CROSS_BASE/install/gcc"
 
-    # 设置编译GCC所需的环境变量
-    export CFLAGS="-O2 -fPIC"
-    export CXXFLAGS="-O2 -fPIC"
     # 下载GCC源码
     cd "$CROSS_BASE/src"
     if [ ! -d "gcc" ]; then
         log_info "Downloading GCC..."
-        wget "https://ftp.gnu.org/gnu/gcc/gcc-$gcc_version/gcc-$gcc_version.tar.gz"
+        wget "${GCC_URL}"
         tar -xf "gcc-$gcc_version.tar.gz"
         mv "gcc-$gcc_version" gcc
 
@@ -35,10 +32,9 @@ build_gcc() {
     mkdir -p "$build_dir"
     cd "$build_dir"
 
-    # 配置GCC - 基于宿主系统参数，但使用本地编译模式
     log_info "Configuring GCC..."
-    "$src_dir/configure" \
-        --with-pkgversion='Spams 13.3.0' \
+        "$src_dir/configure" \
+        --with-pkgversion="Spams ${GCC_VERSION}" \
         --with-bugurl=https://github.com/Spam-Tech/ev3-build-scripts \
         --enable-languages=c,c++,fortran \
         --program-suffix=-13 \
@@ -62,11 +58,13 @@ build_gcc() {
         --disable-werror \
         --enable-checking=release \
         --host=arm-ev3-linux-gnueabi \
-        --target=arm-ev3-linux-gnueabi
+        --target=arm-ev3-linux-gnueabi \
+        CFLAGS="-O2 -fPIC" \
+        CXXFLAGS="-O2 -fPIC"
 
     # 编译
     log_info "Compiling GCC..."
-    make -j$(nproc)
+    make -j${BUILD_JOBS:-$(nproc)}
 
     # 安装
     log_info "Installing GCC..."

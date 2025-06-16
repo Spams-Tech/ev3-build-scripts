@@ -5,7 +5,7 @@ set -e
 source ./setup_environment.sh
 
 create_openblas_deb() {
-    local openblas_version="0.3.29"
+    local openblas_version="${OPENBLAS_VERSION}"
     local install_dir="$CROSS_BASE/install/openblas"
     local pkg_dir="$CROSS_BASE/packages/libopenblas_${openblas_version}_armel"
 

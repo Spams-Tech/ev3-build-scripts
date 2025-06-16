@@ -2,7 +2,6 @@
 
 set -e
 
-# 导入环境变量
 source ./setup_environment.sh
 
 # 通用库编译函数
@@ -13,7 +12,7 @@ build_library() {
     local configure_opts=$4
     local make_opts=$5
     
-    log_section "Building $lib_name"
+    log_section "Building $lib_name $lib_version"
 
     local src_dir="$CROSS_BASE/src/$lib_name"
     local build_dir="$CROSS_BASE/build/$lib_name"
@@ -69,9 +68,9 @@ build_library() {
     # 编译
     log_info "Compiling $lib_name..."
     if [ -n "$make_opts" ]; then
-        eval "make -j$(nproc) $make_opts"
+        eval "make -j${BUILD_JOBS:-$(nproc)} $make_opts"
     else
-        make -j$(nproc)
+        make -j${BUILD_JOBS:-$(nproc)}
     fi
 
     # 安装
@@ -98,7 +97,7 @@ build_library() {
 
 # 特殊库编译函数
 build_openssl() {
-    log_section "Building OpenSSL"
+    log_section "Building OpenSSL ${OPENSSL_VERSION}"
 
     local src_dir="$CROSS_BASE/src/openssl"
     local install_dir="$CROSS_BASE/install/openssl"
@@ -106,9 +105,10 @@ build_openssl() {
     cd "$CROSS_BASE/src"
     if [ ! -d "openssl" ]; then
         log_info "Downloading OpenSSL..."
-        wget https://www.openssl.org/source/openssl-3.5.0.tar.gz
-        tar -xzf openssl-3.5.0.tar.gz
-        mv openssl-3.5.0 openssl
+        wget "${OPENSSL_URL}"
+        tar -xf "openssl-${OPENSSL_VERSION}.tar.gz"
+        mv "openssl-${OPENSSL_VERSION}" openssl
+        rm -f "openssl-${OPENSSL_VERSION}.tar.gz"
     fi
     
     cd "$src_dir"
@@ -123,7 +123,7 @@ build_openssl() {
         $CFLAGS
     
     log_info "Compiling OpenSSL..."
-    make -j$(nproc)
+    make -j${BUILD_JOBS:-$(nproc)}
 
     log_info "Installing OpenSSL..."
     make install_sw install_ssldirs
@@ -137,7 +137,7 @@ build_openssl() {
 }
 
 build_bzip2() {
-    log_section "Building bzip2"
+    log_section "Building bzip2 ${BZIP2_VERSION}"
 
     local src_dir="$CROSS_BASE/src/bzip2"
     local install_dir="$CROSS_BASE/install/bzip2"
@@ -145,9 +145,10 @@ build_bzip2() {
     cd "$CROSS_BASE/src"
     if [ ! -d "bzip2" ]; then
         log_info "Downloading bzip2..."
-        wget https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
-        tar -xzf bzip2-1.0.8.tar.gz
-        mv bzip2-1.0.8 bzip2
+        wget "${BZIP2_URL}"
+        tar -xf "bzip2-${BZIP2_VERSION}.tar.gz"
+        mv "bzip2-${BZIP2_VERSION}" bzip2
+        rm -f "bzip2-${BZIP2_VERSION}.tar.gz"
     fi
     
     cd "$src_dir"
@@ -165,11 +166,11 @@ build_bzip2() {
         Makefile
 
     log_info "Compiling bzip2..."
-    make -j$(nproc) CFLAGS="$CFLAGS -fPIC"
+    make -j${BUILD_JOBS:-$(nproc)} CFLAGS="$CFLAGS -fPIC"
 
     log_info "Installing bzip2..."
     make install PREFIX="$install_dir"
-    make -j$(nproc) libbz2.a CFLAGS="$CFLAGS -fPIC"
+    make -j${BUILD_JOBS:-$(nproc)} libbz2.a CFLAGS="$CFLAGS -fPIC"
     cp libbz2.a "$install_dir"/lib/
     $CROSS_CC -shared -Wl,-soname,libbz2.so.1 -o "$install_dir/lib/libbz2.so.1.0.8" \
         blocksort.o huffman.o crctable.o randtable.o compress.o decompress.o bzlib.o
@@ -191,39 +192,39 @@ build_bzip2() {
 log_section "Starting cross-compilation of all libraries..."
 
 # 1. zlib
-build_library "zlib" "https://zlib.net/zlib-1.3.1.tar.gz" "1.3.1" ""
+build_library "zlib" "${ZLIB_URL}" "${ZLIB_VERSION}" ""
 
 # 2. OpenSSL (特殊处理)
 build_openssl
 
 # 3. libffi
-build_library "libffi" "https://github.com/libffi/libffi/releases/download/v3.4.8/libffi-3.4.8.tar.gz" "3.4.8" ""
+build_library "libffi" "${LIBFFI_URL}" "${LIBFFI_VERSION}" ""
 
 # 4. SQLite
-build_library "sqlite" "https://www.sqlite.org/2025/sqlite-autoconf-3500000.tar.gz" "autoconf-3500000" \
+build_library "sqlite" "${SQLITE_URL}" "autoconf-3500000" \
     "--enable-threadsafe --enable-fts5"
 
 # 5. ncurses
-build_library "ncurses" "https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.5.tar.gz" "6.5" \
+build_library "ncurses" "${NCURSES_URL}" "${NCURSES_VERSION}" \
     "--with-shared --with-termlib --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=$HOME/cross-compile/install/ncurses/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
 
 # 6. readline
-build_library "readline" "https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz" "8.2" \
+build_library "readline" "${READLINE_URL}" "${READLINE_VERSION}" \
     "--with-curses"
 
 # 7. bzip2 (特殊处理)
 build_bzip2
 
 # 8. xz
-build_library "xz" "https://tukaani.org/xz/xz-5.8.1.tar.gz" "5.8.1" \
+build_library "xz" "${XZ_URL}" "${XZ_VERSION}" \
     "--enable-shared --disable-static"
 
 # 9. gdbm
-build_library "gdbm" "https://ftp.gnu.org/gnu/gdbm/gdbm-1.25.tar.gz" "1.25" \
+build_library "gdbm" "${GDBM_URL}" "${GDBM_VERSION}" \
     "--enable-shared --disable-static --enable-libgdbm-compat"
 
 # 10. util-linux (仅用于提供 libuuid)
-build_library "util-linux" "https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.40/util-linux-2.40.4.tar.gz" "2.40.4" \
+build_library "util-linux" "${UTIL_LINUX_URL}" "${UTIL_LINUX_VERSION}" \
     "--disable-all-programs --enable-libuuid --disable-year2038"
 
 log_success "All libraries successfully built!"

@@ -5,7 +5,7 @@ set -e
 source ./setup_environment.sh
 
 create_gcc_deb() {
-    local gcc_version="13.3.0"
+    local gcc_version="${GCC_VERSION}"
     local install_dir="$CROSS_BASE/install/gcc"
     local pkg_dir="$CROSS_BASE/packages/gcc_${gcc_version}_armel"
 
