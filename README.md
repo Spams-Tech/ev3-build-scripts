@@ -56,6 +56,7 @@ Available options:
   -p, --python          Build libraries and Python
   -a, --all             Build all components (libraries, Python, and GCC)
   -o, --openblas        Also build OpenBLAS (default: no)
+  -c, --clean           Clean build directories after completion (default: no)
 ```
 
 ### Examples
@@ -74,7 +75,7 @@ Available options:
 ### Interactive Mode
 
 If you run the script without any build mode option (`-l`, `-g`, `-p`, `-a`), it will display an interactive menu for you to select which components to build.
-The `-j N, --jobs N`, `-q, --quiet`, `-o, --openblas` options are only effective when used with a build mode option mentioned above. If you only set them, you have to choose the build mode interactively later.
+The `-j N, --jobs N`, `-q, --quiet`, `-o, --openblas`, `-c, --clean` options are only effective when used with a build mode option mentioned above. If you only set them, you have to choose the build mode interactively later.
 
 ## Installation Instructions
 

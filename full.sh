@@ -39,6 +39,7 @@ show_help() {
     echo "  -p, --python          Build libraries and Python"
     echo "  -a, --all             Build all components (libraries, Python, and GCC)"
     echo "  -o, --openblas        Also build OpenBLAS (default: no)"
+    echo "  -c, --clean           Clean build directories after completion (default: no)"
     echo ""
     echo "Examples:"
     echo "  $0                    Display an interactive menu"
@@ -60,6 +61,7 @@ JOBS=${DEFAULT_JOBS:-$(nproc)}
 VERBOSE=${DEFAULT_VERBOSE:-1}
 BUILD_MODE=""
 BUILD_OPENBLAS=0
+CLEAN_AFTER_BUILD=0
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -119,6 +121,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -o|--openblas)
             BUILD_OPENBLAS=1
+            shift
+            ;;
+        -c|--clean)
+            CLEAN_AFTER_BUILD=1
             shift
             ;;
         *)
@@ -259,6 +265,19 @@ build_openblas() {
     execute_build_command "bash create_openblas_deb.sh" "Executing packaging script..."
 }
 
+# 清理构建目录
+clean_build_directories() {
+    if [ "$CLEAN_AFTER_BUILD" -eq 1 ]; then
+        log_section "Cleaning build directories"
+        log_info "Removing source, build and install directories..."
+
+        # 保留packages和logs目录，清理其他目录
+        rm -rf ~/cross-compile/src/* ~/cross-compile/build/* ~/cross-compile/install/*
+
+        log_success "Build directories cleaned successfully."
+    fi
+}
+
 # 显示构建完成信息
 show_completion_info() {
     log_section "Build completed"
@@ -337,6 +356,8 @@ main() {
     fi
 
     show_completion_info
+
+    clean_build_directories
 }
 
 # 运行主函数
