@@ -5,9 +5,9 @@ set -e
 source ./setup_environment.sh
 
 build_python() {
-    log_section "Building Python 3.13.5"
+    log_section "Building Python ${PYTHON_VERSION}"
 
-    local python_version="3.13.5"
+    local python_version="${PYTHON_VERSION}"
     local src_dir="$CROSS_BASE/src/python"
     local build_dir="$CROSS_BASE/build/python"
     local install_dir="$CROSS_BASE/install/python"
@@ -40,9 +40,10 @@ build_python() {
     cd "$CROSS_BASE/src"
     if [ ! -d "python" ]; then
         log_info "Downloading Python..."
-        wget "https://www.python.org/ftp/python/$python_version/Python-$python_version.tar.xz"
-        tar -xf "Python-$python_version.tar.xz"
-        mv "Python-$python_version" python
+        wget "${PYTHON_URL}"
+        tar -xf "Python-${python_version}.tar.xz"
+        mv "Python-${python_version}" python
+        rm -f "Python-${python_version}.tar.xz"
     fi
 
     cd "$src_dir"
@@ -80,7 +81,7 @@ EOF
     "$src_dir/configure" --prefix="$CROSS_BASE/build/python-native-install"
 
     log_info "Compiling native Python..."
-    make -j$(nproc)
+    make -j${BUILD_JOBS:-$(nproc)}
 
     log_info "Installing native Python..."
     make install
@@ -117,7 +118,7 @@ EOF
 
     # 编译
     log_info "Compiling Python..."
-    make -j$(nproc)
+    make -j${BUILD_JOBS:-$(nproc)}
 
     # 安装
     log_info "Installing Python..."

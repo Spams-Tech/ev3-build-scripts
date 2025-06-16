@@ -11,29 +11,39 @@ export NC='\033[0m' # No Color
 
 # 日志输出函数
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    local msg="[INFO] $1"
+    echo -e "${BLUE}$msg${NC}"
+    echo "$(date +"%Y-%m-%d %H:%M:%S") $msg" >> "$LOG_FILE"
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    local msg="[SUCCESS] $1"
+    echo -e "${GREEN}$msg${NC}"
+    echo "$(date +"%Y-%m-%d %H:%M:%S") $msg" >> "$LOG_FILE"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    local msg="[WARNING] $1"
+    echo -e "${YELLOW}$msg${NC}"
+    echo "$(date +"%Y-%m-%d %H:%M:%S") $msg" >> "$LOG_FILE"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    local msg="[ERROR] $1"
+    echo -e "${RED}$msg${NC}"
+    echo "$(date +"%Y-%m-%d %H:%M:%S") $msg" >> "$LOG_FILE"
 }
 
 log_section() {
+    local msg="$1"
     echo -e "\n${CYAN}===========================================${NC}"
-    echo -e "${CYAN}$1${NC}"
+    echo -e "${CYAN}$msg${NC}"
     echo -e "${CYAN}===========================================${NC}\n"
+    echo "$(date +"%Y-%m-%d %H:%M:%S") =========== $msg ===========" >> "$LOG_FILE"
 }
 
 # 创建工作目录结构
-mkdir -p ~/cross-compile/{src,build,packages}
+mkdir -p ~/cross-compile/{src,build,packages,logs}
 mkdir -p ~/cross-compile/install/{zlib,openssl,libffi,sqlite,ncurses,readline,bzip2,xz,gdbm,util-linux,python,gcc,openblas}
 
 # 设置基础环境变量
