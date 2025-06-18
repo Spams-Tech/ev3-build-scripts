@@ -2,6 +2,8 @@
 
 set -e
 
+TOTAL_START_TIME=$(date +%s)
+
 handle_interrupt() {
     echo ""
     log_error "Build interrupted by user (Ctrl+C)."
@@ -138,10 +140,33 @@ done
 export BUILD_JOBS=$JOBS
 export BUILD_VERBOSE=$VERBOSE
 
+format_time() {
+    local seconds=$1
+    local hours=$((seconds / 3600))
+    local minutes=$(( (seconds % 3600) / 60 ))
+    local secs=$((seconds % 60))
+
+    if [ $hours -gt 0 ]; then
+        printf "%02dh%02dm%02ds" $hours $minutes $secs
+    elif [ $minutes -gt 0 ]; then
+        printf "%02dm %02ds" $minutes $secs
+    else
+        printf "%02ds" $secs
+    fi
+}
+
+show_build_time() {
+    local start=$1
+    local task=$2
+    local duration=$(($(date +%s) - start))
+    log_info "The command '${task}' has completed and took $(format_time $duration)."
+}
+
 execute_build_command() {
     local command=$1
     local desc=$2
     log_info "$desc"
+    local start_time=$(date +%s)
 
     if [ "$BUILD_VERBOSE" -eq 1 ]; then
         # 详细模式：直接执行命令并显示所有输出，同时保存到日志文件
@@ -153,6 +178,8 @@ execute_build_command() {
             return 1
         fi
     fi
+
+    show_build_time "$start_time" "$command"
 }
 
 # 检查必要工具
@@ -285,7 +312,11 @@ show_completion_info() {
 
     log_info "Generated DEB packages:"
     ls -la ~/cross-compile/packages/*.deb
-    
+
+    local total_end_time=$(date +%s)
+    local total_duration=$((total_end_time - TOTAL_START_TIME))
+    log_section "Total Build Time: $(format_time $total_duration)"
+
     log_section "Installation Instructions"
     log_info "To install the packages, follow these steps:"
     log_info "1. Copy all .deb files to your EV3 device / Docker container."
