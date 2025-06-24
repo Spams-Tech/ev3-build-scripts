@@ -4,12 +4,12 @@ set -e
 
 source ./setup_environment.sh
 
-create_openblas_deb() {
+create_openblas_runtime_deb() {
     local openblas_version="${OPENBLAS_VERSION}"
     local install_dir="$CROSS_BASE/install/openblas"
-    local pkg_dir="$CROSS_BASE/packages/libopenblas_${openblas_version}_armel"
+    local pkg_dir="$CROSS_BASE/packages/libopenblas-base_${openblas_version}+spams1_armel"
 
-    log_section "Creating OpenBLAS $openblas_version DEB package"
+    log_section "Creating OpenBLAS runtime DEB package"
 
     # 检查安装目录是否存在
     if [ ! -d "$install_dir" ]; then
@@ -21,28 +21,14 @@ create_openblas_deb() {
     log_info "Creating package directory structure..."
     rm -rf "$pkg_dir"
     mkdir -p "$pkg_dir/DEBIAN"
-    mkdir -p "$pkg_dir/usr"
+    mkdir -p "$pkg_dir/usr/lib/arm-linux-gnueabi"
 
-    # 复制 OpenBLAS 安装文件
-    log_info "Copying files to package directory..."
-    rsync -av \
-        --exclude='pkgconfig' \
-        "$install_dir/" "$pkg_dir/usr/"
-
-    # 如果有 pkgconfig 文件，放到正确位置
-    if [ -d "$install_dir/lib/pkgconfig" ]; then
-        mkdir -p "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig"
-        cp "$install_dir/lib/pkgconfig"/* "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig/" 2>/dev/null || true
-    fi
-
-    # 移动库文件到 multiarch 目录
-    if [ -d "$pkg_dir/usr/lib" ] && [ "$(ls -A $pkg_dir/usr/lib)" ]; then
-        log_info "Moving library files to multiarch directory..."
-        mkdir -p "$pkg_dir/usr/lib/arm-linux-gnueabi"
-        find "$pkg_dir/usr/lib" -maxdepth 1 -name "*.so*" -exec mv {} "$pkg_dir/usr/lib/arm-linux-gnueabi/" \; 2>/dev/null || true
-        find "$pkg_dir/usr/lib" -maxdepth 1 -name "*.a" -exec mv {} "$pkg_dir/usr/lib/arm-linux-gnueabi/" \; 2>/dev/null || true
-        find "$pkg_dir/usr/lib" -maxdepth 1 -name "*.la" -exec mv {} "$pkg_dir/usr/lib/arm-linux-gnueabi/" \; 2>/dev/null || true
-        find "$pkg_dir/usr/lib" -maxdepth 1 -name "lib*" -type d -exec mv {} "$pkg_dir/usr/lib/arm-linux-gnueabi/" \; 2>/dev/null || true
+    # 复制共享库文件
+    log_info "Copying shared library files to package directory..."
+    if [ -d "$install_dir/lib" ]; then
+        find "$install_dir/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
+            cp -P "$so_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/"
+        done
     fi
 
     # 计算安装大小
@@ -51,8 +37,8 @@ create_openblas_deb() {
     # 创建控制文件
     log_info "Creating control file..."
     cat > "$pkg_dir/DEBIAN/control" << EOF
-Package: libopenblas-spams
-Version: ${openblas_version}
+Package: libopenblas-base
+Version: ${openblas_version}+spams1
 Section: libs
 Priority: optional
 Architecture: armel
@@ -62,7 +48,7 @@ Depends: libc6
 Description: Optimized BLAS (linear algebra) library based on OpenBLAS
  OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version.
  Cross-compiled for ARM architecture (armel).
- This package contains the shared libraries and development files.
+ This package contains the shared runtime libraries.
 EOF
 
     # 创建 postinst 脚本
@@ -96,9 +82,94 @@ EOF
     # 显示包信息
     log_info "Package info:"
     dpkg-deb -I "${pkg_dir}.deb"
+
+    return 0
 }
 
-create_openblas_deb
-log_success "OpenBLAS DEB package created successfully!"
+create_openblas_dev_deb() {
+    local openblas_version="${OPENBLAS_VERSION}"
+    local install_dir="$CROSS_BASE/install/openblas"
+    local pkg_dir="$CROSS_BASE/packages/libopenblas-dev_${openblas_version}+spams1_armel"
+
+    log_section "Creating OpenBLAS development DEB package"
+
+    # 检查安装目录是否存在
+    if [ ! -d "$install_dir" ]; then
+        log_error "OpenBLAS install directory $install_dir does not exist!"
+        return 1
+    fi
+
+    # 清理并创建包目录
+    log_info "Creating package directory structure..."
+    rm -rf "$pkg_dir"
+    mkdir -p "$pkg_dir/DEBIAN"
+    mkdir -p "$pkg_dir/usr/include"
+    mkdir -p "$pkg_dir/usr/lib/arm-linux-gnueabi"
+    mkdir -p "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig"
+
+    # 复制开发文件
+    log_info "Copying development files to package directory..."
+
+    # 复制头文件
+    if [ -d "$install_dir/include" ]; then
+        cp -r "$install_dir/include/"* "$pkg_dir/usr/include/"
+    fi
+
+    # 复制静态库和链接文件
+    if [ -d "$install_dir/lib" ]; then
+        # 复制静态库和链接库
+        find "$install_dir/lib" -type f -name "*.a" -o -name "*.la" | while read file; do
+            cp "$file" "$pkg_dir/usr/lib/arm-linux-gnueabi/"
+        done
+
+        # 复制符号链接
+        find "$install_dir/lib" -type l -name "*.so" | while read link; do
+            cp -P "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/"
+        done
+    fi
+
+    # 复制pkgconfig文件
+    if [ -d "$install_dir/lib/pkgconfig" ]; then
+        cp "$install_dir/lib/pkgconfig/"*.pc "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig/" 2>/dev/null || true
+    fi
+
+    # 计算安装大小
+    local installed_size=$(du -sk "$pkg_dir/usr" | cut -f1)
+
+    # 创建控制文件
+    log_info "Creating control file..."
+    cat > "$pkg_dir/DEBIAN/control" << EOF
+Package: libopenblas-dev
+Version: ${openblas_version}+spams1
+Section: libdevel
+Priority: optional
+Architecture: armel
+Maintainer: spamstech <hi@spams.tech>
+Installed-Size: ${installed_size}
+Depends: libopenblas-base (= ${openblas_version}+spams1), libc6
+Description: Optimized BLAS (linear algebra) library - development files
+ OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version.
+ Cross-compiled for ARM architecture (armel).
+ This package contains the development files.
+EOF
+
+    # 构建 DEB 包
+    log_info "Building DEB package..."
+    dpkg-deb -Zgzip --uniform-compression --build "$pkg_dir"
+
+    log_success "Created: ${pkg_dir}.deb"
+
+    # 显示包信息
+    log_info "Package info:"
+    dpkg-deb -I "${pkg_dir}.deb"
+
+    return 0
+}
+
+# 创建 OpenBLAS 的运行时库和开发库包
+create_openblas_runtime_deb
+create_openblas_dev_deb
+
+log_success "OpenBLAS DEB packages created successfully!"
 log_info "Package location: $CROSS_BASE/packages/"
 ls -la "$CROSS_BASE/packages/libopenblas"*.deb

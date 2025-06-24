@@ -37,7 +37,6 @@ build_gcc() {
         --with-pkgversion="Spams ${GCC_VERSION}" \
         --with-bugurl=https://github.com/Spam-Tech/ev3-build-scripts \
         --enable-languages=c,c++,fortran \
-        --program-suffix=-13 \
         --enable-shared \
         --enable-linker-build-id \
         --with-build-sysroot=$($CROSS_CC -print-sysroot) \
