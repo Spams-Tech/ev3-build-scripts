@@ -233,7 +233,7 @@ Priority: optional
 Architecture: armel
 Maintainer: spamstech <hi@spams.tech>
 Installed-Size: ${installed_size}
-Depends: ${runtime_pkg_name} (= ${version}+spams1)${dependencies:+, }${dependencies}
+Depends: ${dependencies}
 Description: ${description} - development files
  Cross-compiled ${lib_name} library for ARM architecture (armel).
  This package contains the development files.
@@ -335,58 +335,57 @@ log_section "Creating DEB packages for all libraries"
 # 1. zlib
 clear_packaged_files
 create_runtime_deb "zlib" "1:${ZLIB_VERSION}" "Compression library - runtime" "libc6" "zlib1g"
-create_dev_deb "zlib" "1:${ZLIB_VERSION}" "Compression library" "libc6" "zlib1g"
+create_dev_deb "zlib" "1:${ZLIB_VERSION}" "Compression library" "libc6,zlib1g (= 1:${ZLIB_VERSION}+spams1)" "zlib1g"
 
 # 2. OpenSSL - 分为libssl3运行时库，libcrypto3运行时库，以及libssl-dev开发包和openssl二进制工具包
 clear_packaged_files
-create_runtime_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - libssl runtime" "libc6,libcrypto3 (= ${OPENSSL_VERSION}+spams1)" "libssl3"
-create_runtime_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - libcrypto runtime" "libc6" "libcrypto3"
-create_dev_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - development files" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1),libcrypto3 (= ${OPENSSL_VERSION}+spams1)" "libssl"
-create_bin_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - utilities" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1),libcrypto3 (= ${OPENSSL_VERSION}+spams1)" "openssl"
+create_runtime_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - libssl runtime" "libc6,libatomic1" "libssl3"
+create_dev_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - development files" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1)" "libssl"
+create_bin_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - utilities" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1)" "openssl"
 
 # 3. libffi
 clear_packaged_files
 create_runtime_deb "libffi" "${LIBFFI_VERSION}" "Foreign Function Interface library runtime" "libc6" "libffi8"
-create_dev_deb "libffi" "${LIBFFI_VERSION}" "Foreign Function Interface library" "libc6" "libffi"
+create_dev_deb "libffi" "${LIBFFI_VERSION}" "Foreign Function Interface library" "libc6,libffi8 (= ${LIBFFI_VERSION}+spams1)" "libffi"
 
 # 4. SQLite
 clear_packaged_files
 create_runtime_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 shared library" "libc6" "libsqlite3-0"
-create_dev_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 shared library" "libc6" "libsqlite3"
+create_dev_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 shared library" "libc6,libsqlite3-0 (= ${SQLITE_VERSION}+spams1)" "libsqlite3"
 create_bin_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 command line interface" "libc6,libsqlite3-0 (= ${SQLITE_VERSION}+spams1)" "sqlite3"
 
 # 5. ncurses (包含libtinfo6依赖)
 clear_packaged_files
 create_runtime_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6" "libncursesw6"
-create_dev_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6" "libncurses"
-create_bin_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling - utilities" "libc6" "ncurses-bin"
+create_dev_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6,libncursesw6 (= ${NCURSES_VERSION}+spams1)" "libncurses"
+create_bin_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling - utilities" "libc6,libncursesw6 (= ${NCURSES_VERSION}+spams1)" "ncurses-bin"
 
 # 6. readline
 clear_packaged_files
 create_runtime_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries, runtime" "libc6,libncursesw6 (>= ${NCURSES_VERSION}+spams1)" "libreadline8"
-create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev" "libreadline"
+create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev (>= ${NCURSES_VERSION}+spams1),libreadline8 (= ${READLINE_VERSION}+spams1)" "libreadline"
 
 # 7. bzip2
 clear_packaged_files
 create_runtime_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor library - runtime" "libc6" "libbz2-1.0"
-create_dev_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor library" "libc6" "libbz2"
+create_dev_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor library" "libc6,libbz2-1.0 (= ${BZIP2_VERSION}+spams1)" "libbz2"
 create_bin_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor" "libc6,libbz2-1.0 (= ${BZIP2_VERSION}+spams1)" "bzip2"
 
 # 8. xz
 clear_packaged_files
 create_runtime_deb "xz" "${XZ_VERSION}" "XZ-format compression library" "libc6" "liblzma5"
-create_dev_deb "xz" "${XZ_VERSION}" "XZ-format compression library" "libc6" "liblzma"
+create_dev_deb "xz" "${XZ_VERSION}" "XZ-format compression library" "libc6,liblzma5 (= ${XZ_VERSION}+spams1)" "liblzma"
 create_bin_deb "xz" "${XZ_VERSION}" "XZ-format compression utilities" "libc6,liblzma5 (= ${XZ_VERSION}+spams1)" "xz-utils"
 
 # 9. gdbm
 clear_packaged_files
 create_runtime_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines (runtime version)" "libc6" "libgdbm6"
-create_dev_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines" "libc6" "libgdbm"
+create_dev_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines" "libc6,libgdbm6 (= ${GDBM_VERSION}+spams1)" "libgdbm"
 
 # 10. util-linux (仅用于提供 libuuid)
 clear_packaged_files
 create_runtime_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - runtime libraries" "libc6" "libuuid1"
-create_dev_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - development files" "libc6" "uuid"
+create_dev_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - development files" "libc6,libuuid1 (= ${UTIL_LINUX_VERSION}+spams1)" "uuid"
 
 log_success "All DEB packages created successfully!"
 log_info "Packages location: $CROSS_BASE/packages/"
