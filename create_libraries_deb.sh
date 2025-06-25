@@ -4,6 +4,45 @@ set -e
 
 source ./setup_environment.sh
 
+declare -A packaged_files
+
+# 清理已打包文件记录
+clear_packaged_files() {
+    unset packaged_files
+    declare -g -A packaged_files
+}
+
+# 检查文件是否已被打包
+is_file_packaged() {
+    local file_path=$1
+    [ -n "${packaged_files[$file_path]}" ]
+}
+
+# 标记文件已被打包
+mark_file_as_packaged() {
+    local file_path=$1
+    local package_name=$2
+    packaged_files[$file_path]=$package_name
+}
+
+# 智能复制文件，避免重复打包
+smart_copy() {
+    local src=$1
+    local dest=$2
+    local pkg_name=$3
+
+    # 仅当文件未被打包时才复制
+    if ! is_file_packaged "$src"; then
+        mkdir -p "$(dirname "$dest")"
+        cp -P "$src" "$dest"
+        mark_file_as_packaged "$src" "$pkg_name"
+        return 0
+    else
+        log_info "Skipping file already packaged in ${packaged_files[$src]}: $src"
+        return 1
+    fi
+}
+
 # 创建库的运行时 DEB 包
 create_runtime_deb() {
     local lib_name=$1
@@ -32,9 +71,14 @@ create_runtime_deb() {
     # 复制共享库文件到包目录
     log_info "Copying shared library files to package directory..."
     if [ -d "$install_dir/lib" ]; then
-        # 只复制共享库文件 (.so)
+        # 复制实际的共享库文件 (.so*)
         find "$install_dir/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
-            cp -P "$so_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/"
+            smart_copy "$so_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$so_file")" "$runtime_pkg_name"
+        done
+
+        # 复制共享库的符号链接 (*.so.*)
+        find "$install_dir/lib" -type l -name "*.so.*" | while read link; do
+            smart_copy "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$link")" "$runtime_pkg_name"
         done
     fi
 
@@ -131,36 +175,49 @@ create_dev_deb() {
 
     # 复制头文件
     if [ -d "$install_dir/include" ]; then
-        cp -r "$install_dir/include/"* "$pkg_dir/usr/include/"
+        # 逐个复制头文件以便跟踪
+        find "$install_dir/include" -type f | while read header_file; do
+            rel_path=${header_file#$install_dir/include/}
+            dest_file="$pkg_dir/usr/include/$rel_path"
+            smart_copy "$header_file" "$dest_file" "$dev_pkg_name"
+        done
     fi
 
     # 复制静态库和链接文件
     if [ -d "$install_dir/lib" ]; then
         # 复制静态库和链接库
         find "$install_dir/lib" -type f -name "*.a" -o -name "*.la" | while read file; do
-            cp "$file" "$pkg_dir/usr/lib/arm-linux-gnueabi/"
+            smart_copy "$file" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$file")" "$dev_pkg_name"
         done
 
         # 复制符号链接
         find "$install_dir/lib" -type l -name "*.so" | while read link; do
-            cp -P "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/"
+            smart_copy "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$link")" "$dev_pkg_name"
         done
     fi
 
     # 复制pkgconfig文件
     if [ -d "$install_dir/lib/pkgconfig" ]; then
-        cp "$install_dir/lib/pkgconfig/"*.pc "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig/" 2>/dev/null || true
+        find "$install_dir/lib/pkgconfig" -name "*.pc" | while read pc_file; do
+            smart_copy "$pc_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig/$(basename "$pc_file")" "$dev_pkg_name"
+        done
     fi
 
     # 复制文档和man页
     if [ -d "$install_dir/share/man" ]; then
-        mkdir -p "$pkg_dir/usr/share/man"
-        cp -r "$install_dir/share/man/"* "$pkg_dir/usr/share/man/"
+        find "$install_dir/share/man" -type f | while read man_file; do
+            rel_path=${man_file#$install_dir/share/man/}
+            dest_file="$pkg_dir/usr/share/man/$rel_path"
+            smart_copy "$man_file" "$dest_file" "$dev_pkg_name"
+        done
     fi
 
     if [ -d "$install_dir/share/doc" ]; then
-        mkdir -p "$pkg_dir/usr/share/doc"
-        cp -r "$install_dir/share/doc/"* "$pkg_dir/usr/share/doc/"
+        find "$install_dir/share/doc" -type f | while read doc_file; do
+            rel_path=${doc_file#$install_dir/share/doc/}
+            dest_file="$pkg_dir/usr/share/doc/$rel_path"
+            smart_copy "$doc_file" "$dest_file" "$dev_pkg_name"
+        done
     fi
 
     # 计算安装大小
@@ -225,13 +282,18 @@ create_bin_deb() {
     # 复制二进制文件到包目录
     log_info "Copying binary files to package directory..."
     if [ -d "$install_dir/bin" ]; then
-        cp "$install_dir/bin/"* "$pkg_dir/usr/bin/" 2>/dev/null || true
+        find "$install_dir/bin" -type f | while read bin_file; do
+            smart_copy "$bin_file" "$pkg_dir/usr/bin/$(basename "$bin_file")" "$bin_pkg_name"
+        done
     fi
 
     # 复制文档和man页
     if [ -d "$install_dir/share/man" ]; then
-        mkdir -p "$pkg_dir/usr/share/man"
-        cp -r "$install_dir/share/man/"* "$pkg_dir/usr/share/man/"
+        find "$install_dir/share/man" -type f | while read man_file; do
+            rel_path=${man_file#$install_dir/share/man/}
+            dest_file="$pkg_dir/usr/share/man/$rel_path"
+            smart_copy "$man_file" "$dest_file" "$bin_pkg_name"
+        done
     fi
 
     # 计算安装大小
@@ -271,47 +333,58 @@ EOF
 log_section "Creating DEB packages for all libraries"
 
 # 1. zlib
+clear_packaged_files
 create_runtime_deb "zlib" "1:${ZLIB_VERSION}" "Compression library - runtime" "libc6" "zlib1g"
 create_dev_deb "zlib" "1:${ZLIB_VERSION}" "Compression library" "libc6" "zlib1g"
 
 # 2. OpenSSL - 分为libssl3运行时库，libcrypto3运行时库，以及libssl-dev开发包和openssl二进制工具包
+clear_packaged_files
 create_runtime_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - libssl runtime" "libc6,libcrypto3 (= ${OPENSSL_VERSION}+spams1)" "libssl3"
 create_runtime_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - libcrypto runtime" "libc6" "libcrypto3"
 create_dev_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - development files" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1),libcrypto3 (= ${OPENSSL_VERSION}+spams1)" "libssl"
 create_bin_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - utilities" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1),libcrypto3 (= ${OPENSSL_VERSION}+spams1)" "openssl"
 
 # 3. libffi
+clear_packaged_files
 create_runtime_deb "libffi" "${LIBFFI_VERSION}" "Foreign Function Interface library runtime" "libc6" "libffi8"
 create_dev_deb "libffi" "${LIBFFI_VERSION}" "Foreign Function Interface library" "libc6" "libffi"
 
 # 4. SQLite
+clear_packaged_files
 create_runtime_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 shared library" "libc6" "libsqlite3-0"
 create_dev_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 shared library" "libc6" "libsqlite3"
 create_bin_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 command line interface" "libc6,libsqlite3-0 (= ${SQLITE_VERSION}+spams1)" "sqlite3"
 
 # 5. ncurses (包含libtinfo6依赖)
+clear_packaged_files
 create_runtime_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6" "libncursesw6"
 create_dev_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6" "libncurses"
+create_bin_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling - utilities" "libc6" "ncurses-bin"
 
 # 6. readline
+clear_packaged_files
 create_runtime_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries, runtime" "libc6,libncursesw6 (>= ${NCURSES_VERSION}+spams1)" "libreadline8"
 create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev" "libreadline"
 
 # 7. bzip2
+clear_packaged_files
 create_runtime_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor library - runtime" "libc6" "libbz2-1.0"
 create_dev_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor library" "libc6" "libbz2"
 create_bin_deb "bzip2" "${BZIP2_VERSION}" "high-quality block-sorting file compressor" "libc6,libbz2-1.0 (= ${BZIP2_VERSION}+spams1)" "bzip2"
 
 # 8. xz
+clear_packaged_files
 create_runtime_deb "xz" "${XZ_VERSION}" "XZ-format compression library" "libc6" "liblzma5"
 create_dev_deb "xz" "${XZ_VERSION}" "XZ-format compression library" "libc6" "liblzma"
 create_bin_deb "xz" "${XZ_VERSION}" "XZ-format compression utilities" "libc6,liblzma5 (= ${XZ_VERSION}+spams1)" "xz-utils"
 
 # 9. gdbm
+clear_packaged_files
 create_runtime_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines (runtime version)" "libc6" "libgdbm6"
 create_dev_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines" "libc6" "libgdbm"
 
 # 10. util-linux (仅用于提供 libuuid)
+clear_packaged_files
 create_runtime_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - runtime libraries" "libc6" "libuuid1"
 create_dev_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - development files" "libc6" "uuid"
 
