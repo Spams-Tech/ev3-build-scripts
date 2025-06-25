@@ -221,7 +221,7 @@ build_library "xz" "${XZ_URL}" "${XZ_VERSION}" \
 
 # 9. gdbm
 build_library "gdbm" "${GDBM_URL}" "${GDBM_VERSION}" \
-    "--enable-shared --disable-static"
+    "--enable-shared --disable-static --enable-libgdbm-compat"
 
 # 10. util-linux (仅用于提供 libuuid)
 build_library "util-linux" "${UTIL_LINUX_URL}" "${UTIL_LINUX_VERSION}" \

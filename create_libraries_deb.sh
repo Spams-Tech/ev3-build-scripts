@@ -50,6 +50,7 @@ create_runtime_deb() {
     local description=$3
     local dependencies=$4
     local runtime_pkg_name=$5  # 运行时包名
+    local control_extra=${6:-""}  # 额外的控制文件配置，可选参数
 
     log_section "Creating $runtime_pkg_name runtime DEB package"
 
@@ -105,6 +106,11 @@ EOF
         echo "Depends: $dependencies" >> "$pkg_dir/DEBIAN/control"
     fi
     
+    # 添加额外的控制文件配置
+    if [ -n "$control_extra" ]; then
+        echo -e "$control_extra" >> "$pkg_dir/DEBIAN/control"
+    fi
+
     # 创建 postinst 脚本
     log_info "Creating postinst script..."
     cat > "$pkg_dir/DEBIAN/postinst" << 'EOF'
@@ -352,9 +358,7 @@ create_bin_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal han
 # 6. readline
 clear_packaged_files
 create_runtime_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries, runtime" "libc6,libncursesw6 (>= ${NCURSES_VERSION}+spams1)" "libreadline8"
-# 添加替代系统libreadline-gplv2-dev的配置
-READLINE_DEV_CONTROL_EXTRA="Provides: libreadline-dev\nReplaces: libreadline-gplv2-dev\nConflicts: libreadline-gplv2-dev"
-create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev (>= ${NCURSES_VERSION}+spams1),libreadline8 (= ${READLINE_VERSION}+spams1)" "libreadline" "$READLINE_DEV_CONTROL_EXTRA"
+create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev (>= ${NCURSES_VERSION}+spams1),libreadline8 (= ${READLINE_VERSION}+spams1)" "libreadline" "Provides: libreadline-gplv2-dev\nReplaces: libreadline-gplv2-dev"
 
 # 7. bzip2
 clear_packaged_files
@@ -370,8 +374,8 @@ create_bin_deb "xz" "${XZ_VERSION}" "XZ-format compression utilities" "libc6,lib
 
 # 9. gdbm
 clear_packaged_files
-create_runtime_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines (runtime version)" "libc6" "libgdbm6"
-create_dev_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines" "libc6,libgdbm6 (= ${GDBM_VERSION}+spams1)" "libgdbm"
+create_runtime_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines (runtime version)" "libc6" "libgdbm6" "Provides: libgdbm-compat4\nReplaces: libgdbm-compat4"
+create_dev_deb "gdbm" "${GDBM_VERSION}" "GNU dbm database routines" "libc6,libgdbm6 (= ${GDBM_VERSION}+spams1)" "libgdbm" "Provides: libgdbm-compat-dev\nReplaces: libgdbm-compat-dev"
 
 # 10. util-linux (仅用于提供 libuuid)
 clear_packaged_files
