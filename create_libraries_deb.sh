@@ -149,6 +149,7 @@ create_dev_deb() {
     local dependencies=$4
     local runtime_pkg_name=$5  # 运行时包名
     local dev_pkg_name="${runtime_pkg_name}-dev"  # 开发包名
+    local control_extra=${6:-""}  # 额外的控制文件配置，可选参数
 
     log_section "Creating $dev_pkg_name development DEB package"
 
@@ -203,23 +204,6 @@ create_dev_deb() {
         done
     fi
 
-    # 复制文档和man页
-    if [ -d "$install_dir/share/man" ]; then
-        find "$install_dir/share/man" -type f | while read man_file; do
-            rel_path=${man_file#$install_dir/share/man/}
-            dest_file="$pkg_dir/usr/share/man/$rel_path"
-            smart_copy "$man_file" "$dest_file" "$dev_pkg_name"
-        done
-    fi
-
-    if [ -d "$install_dir/share/doc" ]; then
-        find "$install_dir/share/doc" -type f | while read doc_file; do
-            rel_path=${doc_file#$install_dir/share/doc/}
-            dest_file="$pkg_dir/usr/share/doc/$rel_path"
-            smart_copy "$doc_file" "$dest_file" "$dev_pkg_name"
-        done
-    fi
-
     # 计算安装大小
     local installed_size=$(du -sk "$pkg_dir/usr" | cut -f1)
 
@@ -238,6 +222,11 @@ Description: ${description} - development files
  Cross-compiled ${lib_name} library for ARM architecture (armel).
  This package contains the development files.
 EOF
+
+    # 添加额外的控制文件配置
+    if [ -n "$control_extra" ]; then
+        echo -e "$control_extra" >> "$pkg_dir/DEBIAN/control"
+    fi
 
     # 构建 DEB 包
     log_info "Building DEB package..."
@@ -363,7 +352,9 @@ create_bin_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal han
 # 6. readline
 clear_packaged_files
 create_runtime_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries, runtime" "libc6,libncursesw6 (>= ${NCURSES_VERSION}+spams1)" "libreadline8"
-create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev (>= ${NCURSES_VERSION}+spams1),libreadline8 (= ${READLINE_VERSION}+spams1)" "libreadline"
+# 添加替代系统libreadline-gplv2-dev的配置
+READLINE_DEV_CONTROL_EXTRA="Provides: libreadline-dev\nReplaces: libreadline-gplv2-dev\nConflicts: libreadline-gplv2-dev"
+create_dev_deb "readline" "${READLINE_VERSION}" "GNU readline and history libraries" "libc6,libncurses-dev (>= ${NCURSES_VERSION}+spams1),libreadline8 (= ${READLINE_VERSION}+spams1)" "libreadline" "$READLINE_DEV_CONTROL_EXTRA"
 
 # 7. bzip2
 clear_packaged_files
