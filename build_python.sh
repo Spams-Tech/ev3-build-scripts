@@ -18,10 +18,10 @@ build_python() {
     local all_pkg_config_paths=""
 
     for lib in zlib openssl libffi sqlite ncurses readline bzip2 xz gdbm util-linux; do
-        if [ -d "$CROSS_BASE/install/$lib" ]; then
-            all_lib_paths="$all_lib_paths -L$CROSS_BASE/install/$lib/lib"
-            all_include_paths="$all_include_paths -I$CROSS_BASE/install/$lib/include"
-            all_pkg_config_paths="$all_pkg_config_paths:$CROSS_BASE/install/$lib/lib/pkgconfig"
+        if [ -d "$CROSS_BASE/install/$lib/usr" ]; then
+            all_lib_paths="$all_lib_paths -L$CROSS_BASE/install/$lib/usr/lib"
+            all_include_paths="$all_include_paths -I$CROSS_BASE/install/$lib/usr/include"
+            all_pkg_config_paths="$all_pkg_config_paths:$CROSS_BASE/install/$lib/usr/lib/pkgconfig"
         fi
     done
 
