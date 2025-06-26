@@ -91,3 +91,4 @@ create_gcc_deb
 log_success "GCC DEB package created successfully!"
 log_info "Package location: $CROSS_BASE/packages/"
 ls -la "$CROSS_BASE/packages/gcc"*.deb
+

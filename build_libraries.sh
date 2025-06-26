@@ -17,7 +17,7 @@ build_library() {
     local src_dir="$CROSS_BASE/src/$lib_name"
     local build_dir="$CROSS_BASE/build/$lib_name"
     local install_dir="$CROSS_BASE/install/$lib_name"
-    
+
     # 设置库特定的环境变量
     export CC=$CROSS_CC
     export CXX=$CROSS_CXX
@@ -25,7 +25,7 @@ build_library() {
     export STRIP=$CROSS_STRIP
     export RANLIB=$CROSS_RANLIB
     export PKG_CONFIG_PATH="$install_dir/lib/pkgconfig"
-    
+
     # 下载和解压源码
     cd "$CROSS_BASE/src"
     if [ ! -d "$lib_name" ]; then
@@ -52,16 +52,16 @@ build_library() {
     log_info "Configuring $lib_name..."
     if [ -n "$configure_opts" ]; then
         if [ $lib_name == "readline" ]; then
-            "$src_dir/configure" --host=$CROSS_HOST --prefix="$install_dir" --enable-shared --disable-static CPPFLAGS="-I$CROSS_BASE/install/ncurses/include" LDFLAGS="-L$CROSS_BASE/install/ncurses/lib -lncursesw -ltinfow"
+            "$src_dir/configure" --host=$CROSS_HOST --prefix=/usr --enable-shared --disable-static CPPFLAGS="-I$CROSS_BASE/install/ncurses/usr/include" LDFLAGS="-L$CROSS_BASE/install/ncurses/usr/lib -lncursesw -ltinfow"
         else
-          eval "$src_dir/configure --host=$CROSS_HOST --prefix=$install_dir $configure_opts"
+          eval "$src_dir/configure --host=$CROSS_HOST --prefix=/usr $configure_opts"
         fi
     else
         if [ $lib_name == "zlib" ]; then
             # zlib 特殊处理
-            "$src_dir/configure" --prefix="$install_dir"
+            "$src_dir/configure" --prefix=/usr
         else
-            "$src_dir/configure" --host=$CROSS_HOST --prefix="$install_dir" --enable-shared --disable-static
+            "$src_dir/configure" --host=$CROSS_HOST --prefix=/usr --enable-shared --disable-static
         fi
     fi
     
@@ -75,15 +75,15 @@ build_library() {
 
     # 安装
     log_info "Installing $lib_name..."
-    make install
+    make DESTDIR="$install_dir" install
 
     if [ $lib_name == "ncurses" ]; then
         log_info "Creating symlinks for ncurses..."
         for lib in ncurses form panel menu tinfo ; do
-            ln -sfv lib${lib}w.so $install_dir/lib/lib${lib}.so
-            ln -sfv ${lib}w.pc $install_dir/lib/pkgconfig/${lib}.pc
+            ln -sfv lib${lib}w.so $install_dir/usr/lib/lib${lib}.so
+            ln -sfv ${lib}w.pc $install_dir/usr/lib/pkgconfig/${lib}.pc
         done
-        ln -sfv libncursesw.so $install_dir/lib/libcurses.so
+        ln -sfv libncursesw.so $install_dir/usr/lib/libcurses.so
     fi
 
     # 记录安装的文件列表
@@ -101,7 +101,7 @@ build_openssl() {
 
     local src_dir="$CROSS_BASE/src/openssl"
     local install_dir="$CROSS_BASE/install/openssl"
-    
+
     cd "$CROSS_BASE/src"
     if [ ! -d "openssl" ]; then
         log_info "Downloading OpenSSL..."
@@ -116,7 +116,8 @@ build_openssl() {
     
     log_info "Configuring OpenSSL..."
     ./Configure linux-armv4 \
-        --prefix="$install_dir" \
+        --prefix=/usr \
+        --openssldir=/usr/lib/ssl \
         --cross-compile-prefix= \
         shared \
         no-asm \
@@ -126,7 +127,7 @@ build_openssl() {
     make -j${BUILD_JOBS:-$(nproc)}
 
     log_info "Installing OpenSSL..."
-    make install_sw install_ssldirs
+    make DESTDIR="$install_dir" install_sw install_ssldirs
 
     find "$install_dir" -type f > "$CROSS_BASE/install/openssl_files.list"
     log_info "File list saved to $CROSS_BASE/install/openssl_files.list"
@@ -169,13 +170,13 @@ build_bzip2() {
     make -j${BUILD_JOBS:-$(nproc)} CFLAGS="$CFLAGS -fPIC"
 
     log_info "Installing bzip2..."
-    make install PREFIX="$install_dir"
+    make install PREFIX="$install_dir"/usr
     make -j${BUILD_JOBS:-$(nproc)} libbz2.a CFLAGS="$CFLAGS -fPIC"
-    cp libbz2.a "$install_dir"/lib/
-    $CROSS_CC -shared -Wl,-soname,libbz2.so.1 -o "$install_dir/lib/libbz2.so.1.0.8" \
+    cp libbz2.a "$install_dir"/usr/lib/
+    $CROSS_CC -shared -Wl,-soname,libbz2.so.1 -o "$install_dir/usr/lib/libbz2.so.1.0.8" \
         blocksort.o huffman.o crctable.o randtable.o compress.o decompress.o bzlib.o
     
-    cd "$install_dir/lib"
+    cd "$install_dir/usr/lib"
     ln -sf libbz2.so.1.0.8 libbz2.so.1.0
     ln -sf libbz2.so.1.0.8 libbz2.so.1
     ln -sf libbz2.so.1.0.8 libbz2.so
@@ -206,7 +207,7 @@ build_library "sqlite" "${SQLITE_URL}" "autoconf-3500000" \
 
 # 5. ncurses
 build_library "ncurses" "${NCURSES_URL}" "${NCURSES_VERSION}" \
-    "--with-shared --with-termlib --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=$HOME/cross-compile/install/ncurses/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
+    "--with-shared --with-termlib --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=/usr/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
 
 # 6. readline
 build_library "readline" "${READLINE_URL}" "${READLINE_VERSION}" \
@@ -225,6 +226,6 @@ build_library "gdbm" "${GDBM_URL}" "${GDBM_VERSION}" \
 
 # 10. util-linux (仅用于提供 libuuid)
 build_library "util-linux" "${UTIL_LINUX_URL}" "${UTIL_LINUX_VERSION}" \
-    "--disable-all-programs --enable-libuuid --disable-year2038"
+    "--libdir=/usr/lib --disable-all-programs --enable-libuuid --disable-year2038"
 
 log_success "All libraries successfully built!"

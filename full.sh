@@ -320,9 +320,7 @@ show_completion_info() {
     log_section "Installation Instructions"
     log_info "To install the packages, follow these steps:"
     log_info "1. Copy all .deb files to your EV3 device / Docker container."
-    log_info "2. Install libraries first: sudo dpkg -i --force-overwrite <...>.deb"
-    log_info "3. Install Python: sudo dpkg -i --force-overwrite python3*.deb"
-    log_info "4. Install GCC: sudo dpkg -i --force-overwrite gcc*.deb"
+    log_info "2. Install all packages: sudo dpkg -i *.deb"
     log_info "The build logs have been saved to $LOG_FILE."
 }
 
