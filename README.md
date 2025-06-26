@@ -83,9 +83,7 @@ After compilation, the generated DEB packages are located in the `~/cross-compil
 
 To install the packages, follow these steps:
 1. Copy all .deb files to your EV3 device or Docker container
-2. Install libraries first: `sudo dpkg -i --force-overwrite <...>.deb`
-3. Install Python: `sudo dpkg -i --force-overwrite python3*.deb`
-4. Install GCC: `sudo dpkg -i --force-overwrite gcc*.deb`
+2. Install all packages: `sudo dpkg -i *.deb`
 
 ## Logs
 
