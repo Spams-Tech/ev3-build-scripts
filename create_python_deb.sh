@@ -52,7 +52,7 @@ Priority: optional
 Architecture: armel
 Maintainer: spamstech <hi@spams.tech>
 Installed-Size: ${installed_size}
-Depends: libc6
+Depends: libc6, zlib1g, libssl3, libffi8, libsqlite3-0, libncursesw6, libreadline8, libbz2-1.0, liblzma5, libgdbm6, libuuid1
 Description: Python ${python_version} interpreter (cross-compiled for ARM)
  Python is an interpreted, interactive, object-oriented programming
  language. This package contains Python ${python_version} interpreter cross-compiled
