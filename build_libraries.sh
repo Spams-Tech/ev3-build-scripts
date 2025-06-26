@@ -226,6 +226,6 @@ build_library "gdbm" "${GDBM_URL}" "${GDBM_VERSION}" \
 
 # 10. util-linux (仅用于提供 libuuid)
 build_library "util-linux" "${UTIL_LINUX_URL}" "${UTIL_LINUX_VERSION}" \
-    "--disable-all-programs --enable-libuuid --disable-year2038"
+    "--libdir=/usr/lib --disable-all-programs --enable-libuuid --disable-year2038"
 
 log_success "All libraries successfully built!"
