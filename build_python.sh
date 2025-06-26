@@ -113,7 +113,7 @@ EOF
         --with-ensurepip=no \
         --enable-shared \
         --with-lto \
-        --with-openssl="$CROSS_BASE/install/openssl" \
+        --with-openssl="$CROSS_BASE/install/openssl/usr" \
         --with-build-python="$CROSS_BASE/build/python-native-install/bin/python3.13"
 
     # 编译
