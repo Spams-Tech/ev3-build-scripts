@@ -71,14 +71,14 @@ create_runtime_deb() {
 
     # 复制共享库文件到包目录
     log_info "Copying shared library files to package directory..."
-    if [ -d "$install_dir/lib" ]; then
+    if [ -d "$install_dir/usr/lib" ]; then
         # 复制实际的共享库文件 (.so*)
-        find "$install_dir/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
+        find "$install_dir/usr/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
             smart_copy "$so_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$so_file")" "$runtime_pkg_name"
         done
 
         # 复制共享库的符号链接 (*.so.*)
-        find "$install_dir/lib" -type l -name "*.so.*" | while read link; do
+        find "$install_dir/usr/lib" -type l -name "*.so.*" | while read link; do
             smart_copy "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$link")" "$runtime_pkg_name"
         done
     fi
@@ -181,31 +181,31 @@ create_dev_deb() {
     log_info "Copying development files to package directory..."
 
     # 复制头文件
-    if [ -d "$install_dir/include" ]; then
+    if [ -d "$install_dir/usr/include" ]; then
         # 逐个复制头文件以便跟踪
-        find "$install_dir/include" -type f | while read header_file; do
-            rel_path=${header_file#$install_dir/include/}
+        find "$install_dir/usr/include" -type f | while read header_file; do
+            rel_path=${header_file#$install_dir/usr/include/}
             dest_file="$pkg_dir/usr/include/$rel_path"
             smart_copy "$header_file" "$dest_file" "$dev_pkg_name"
         done
     fi
 
     # 复制静态库和链接文件
-    if [ -d "$install_dir/lib" ]; then
+    if [ -d "$install_dir/usr/lib" ]; then
         # 复制静态库和链接库
-        find "$install_dir/lib" -type f -name "*.a" -o -name "*.la" | while read file; do
+        find "$install_dir/usr/lib" -type f -name "*.a" -o -name "*.la" | while read file; do
             smart_copy "$file" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$file")" "$dev_pkg_name"
         done
 
         # 复制符号链接
-        find "$install_dir/lib" -type l -name "*.so" | while read link; do
+        find "$install_dir/usr/lib" -type l -name "*.so" | while read link; do
             smart_copy "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$link")" "$dev_pkg_name"
         done
     fi
 
     # 复制pkgconfig文件
-    if [ -d "$install_dir/lib/pkgconfig" ]; then
-        find "$install_dir/lib/pkgconfig" -name "*.pc" | while read pc_file; do
+    if [ -d "$install_dir/usr/lib/pkgconfig" ]; then
+        find "$install_dir/usr/lib/pkgconfig" -name "*.pc" | while read pc_file; do
             smart_copy "$pc_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/pkgconfig/$(basename "$pc_file")" "$dev_pkg_name"
         done
     fi
@@ -274,21 +274,31 @@ create_bin_deb() {
     mkdir -p "$pkg_dir/usr/bin"
     mkdir -p "$pkg_dir/usr/share"
 
+    # 处理SSL配置目录
+    if [ "$lib_name" = "openssl" ]; then
+        mkdir -p "$pkg_dir/usr/lib/ssl"
+    fi
+
     # 复制二进制文件到包目录
     log_info "Copying binary files to package directory..."
-    if [ -d "$install_dir/bin" ]; then
-        find "$install_dir/bin" -type f | while read bin_file; do
+    if [ -d "$install_dir/usr/bin" ]; then
+        find "$install_dir/usr/bin" -type f | while read bin_file; do
             smart_copy "$bin_file" "$pkg_dir/usr/bin/$(basename "$bin_file")" "$bin_pkg_name"
         done
     fi
 
     # 复制文档和man页
-    if [ -d "$install_dir/share/man" ]; then
-        find "$install_dir/share/man" -type f | while read man_file; do
-            rel_path=${man_file#$install_dir/share/man/}
+    if [ -d "$install_dir/usr/share/man" ]; then
+        find "$install_dir/usr/share/man" -type f | while read man_file; do
+            rel_path=${man_file#$install_dir/usr/share/man/}
             dest_file="$pkg_dir/usr/share/man/$rel_path"
             smart_copy "$man_file" "$dest_file" "$bin_pkg_name"
         done
+    fi
+
+    if [ "$lib_name" = "openssl" ] && [ -d "$install_dir/usr/lib/ssl" ]; then
+        log_info "Copying SSL configuration files..."
+        cp -r "$install_dir/usr/lib/ssl"/* "$pkg_dir/usr/lib/ssl/" 2>/dev/null || true
     fi
 
     # 计算安装大小
