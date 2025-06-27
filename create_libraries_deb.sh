@@ -67,24 +67,24 @@ create_runtime_deb() {
     log_info "Creating package directory structure..."
     rm -rf "$pkg_dir"
     mkdir -p "$pkg_dir/DEBIAN"
-    mkdir -p "$pkg_dir/usr/lib/arm-linux-gnueabi"
+    mkdir -p "$pkg_dir/lib/arm-linux-gnueabi"
 
     # 复制共享库文件到包目录
     log_info "Copying shared library files to package directory..."
     if [ -d "$install_dir/usr/lib" ]; then
         # 复制实际的共享库文件 (.so*)
         find "$install_dir/usr/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
-            smart_copy "$so_file" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$so_file")" "$runtime_pkg_name"
+            smart_copy "$so_file" "$pkg_dir/lib/arm-linux-gnueabi/$(basename "$so_file")" "$runtime_pkg_name"
         done
 
         # 复制共享库的符号链接 (*.so.*)
         find "$install_dir/usr/lib" -type l -name "*.so.*" | while read link; do
-            smart_copy "$link" "$pkg_dir/usr/lib/arm-linux-gnueabi/$(basename "$link")" "$runtime_pkg_name"
+            smart_copy "$link" "$pkg_dir/lib/arm-linux-gnueabi/$(basename "$link")" "$runtime_pkg_name"
         done
     fi
 
     # 计算安装大小
-    local installed_size=$(du -sk "$pkg_dir/usr" | cut -f1)
+    local installed_size=$(du -sk "$pkg_dir/lib" | cut -f1)
 
     # 创建控制文件
     log_info "Creating control file..."
@@ -361,7 +361,7 @@ create_bin_deb "sqlite" "${SQLITE_VERSION}" "SQLite 3 command line interface" "l
 
 # 5. ncurses (包含libtinfo6依赖)
 clear_packaged_files
-create_runtime_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6" "libncursesw6"
+create_runtime_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6" "libncursesw6" "Provides: libtinfo6\nReplaces: libtinfo6"
 create_dev_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling" "libc6,libncursesw6 (= ${NCURSES_VERSION}+spams1)" "libncurses"
 create_bin_deb "ncurses" "${NCURSES_VERSION}" "shared libraries for terminal handling - utilities" "libc6,libncursesw6 (= ${NCURSES_VERSION}+spams1)" "ncurses-bin"
 
