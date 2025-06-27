@@ -207,7 +207,7 @@ build_library "sqlite" "${SQLITE_URL}" "autoconf-3500000" \
 
 # 5. ncurses
 build_library "ncurses" "${NCURSES_URL}" "${NCURSES_VERSION}" \
-    "--with-ticlib=libtic --with-versioned-syms --with-shared --with-termlib=libtinfo --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=/usr/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
+    "--with-shared --with-termlib --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=/usr/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
 
 # 6. readline
 build_library "readline" "${READLINE_URL}" "${READLINE_VERSION}" \
