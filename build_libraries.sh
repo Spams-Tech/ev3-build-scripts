@@ -52,7 +52,7 @@ build_library() {
     log_info "Configuring $lib_name..."
     if [ -n "$configure_opts" ]; then
         if [ $lib_name == "readline" ]; then
-            "$src_dir/configure" --host=$CROSS_HOST --prefix=/usr --enable-shared --disable-static CPPFLAGS="-I$CROSS_BASE/install/ncurses/usr/include" LDFLAGS="-L$CROSS_BASE/install/ncurses/usr/lib -lncursesw -ltinfow"
+            "$src_dir/configure" --host=$CROSS_HOST --prefix=/usr --enable-shared --disable-static CPPFLAGS="-I$CROSS_BASE/install/ncurses/usr/include" LDFLAGS="-L$CROSS_BASE/install/ncurses/usr/lib -lncursesw -ltinfo"
         else
           eval "$src_dir/configure --host=$CROSS_HOST --prefix=/usr $configure_opts"
         fi
@@ -79,7 +79,7 @@ build_library() {
 
     if [ $lib_name == "ncurses" ]; then
         log_info "Creating symlinks for ncurses..."
-        for lib in ncurses form panel menu tinfo ; do
+        for lib in ncurses form panel menu; do
             ln -sfv lib${lib}w.so $install_dir/usr/lib/lib${lib}.so
             ln -sfv ${lib}w.pc $install_dir/usr/lib/pkgconfig/${lib}.pc
         done
@@ -207,7 +207,7 @@ build_library "sqlite" "${SQLITE_URL}" "autoconf-3500000" \
 
 # 5. ncurses
 build_library "ncurses" "${NCURSES_URL}" "${NCURSES_VERSION}" \
-    "--with-shared --with-termlib --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=/usr/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
+    "--with-shared --with-versioned-syms --with-ticlib=tic -with-termlib=tinfo --with-terminfo-dirs=\"/usr/share/terminfo:/lib/terminfo:/etc/terminfo\" --with-pkg-config-libdir=/usr/lib/pkgconfig --without-debug --enable-widec --enable-pc-files --enable-overwrite --with-strip-program=$HOME/x-tools/arm-ev3-linux-gnueabi/bin/arm-ev3-linux-gnueabi-strip"
 
 # 6. readline
 build_library "readline" "${READLINE_URL}" "${READLINE_VERSION}" \
