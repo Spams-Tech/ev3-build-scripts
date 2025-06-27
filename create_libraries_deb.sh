@@ -67,24 +67,78 @@ create_runtime_deb() {
     log_info "Creating package directory structure..."
     rm -rf "$pkg_dir"
     mkdir -p "$pkg_dir/DEBIAN"
-    mkdir -p "$pkg_dir/lib/arm-linux-gnueabi"
+
+    local lib_path=""
+    local usr_lib_path=""
+    case "$lib_name" in
+        "zlib"|"readline"|"bzip2"|"xz")
+            lib_path="$pkg_dir/lib/arm-linux-gnueabi"
+            mkdir -p "$lib_path"
+            ;;
+        "openssl"|"libffi"|"sqlite"|"gdbm"|"util-linux")
+            usr_lib_path="$pkg_dir/usr/lib/arm-linux-gnueabi"
+            mkdir -p "$usr_lib_path"
+            ;;
+        "ncurses")
+            # 特殊处理
+            lib_path="$pkg_dir/lib/arm-linux-gnueabi"
+            usr_lib_path="$pkg_dir/usr/lib/arm-linux-gnueabi"
+            mkdir -p "$lib_path"
+            mkdir -p "$usr_lib_path"
+            ;;
+    esac
 
     # 复制共享库文件到包目录
     log_info "Copying shared library files to package directory..."
     if [ -d "$install_dir/usr/lib" ]; then
-        # 复制实际的共享库文件 (.so*)
-        find "$install_dir/usr/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
-            smart_copy "$so_file" "$pkg_dir/lib/arm-linux-gnueabi/$(basename "$so_file")" "$runtime_pkg_name"
-        done
+        if [ "$lib_name" = "ncurses" ]; then
+            # 特殊处理
+            find "$install_dir/usr/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
+                filename=$(basename "$so_file")
+                if [[ "$filename" =~ ^libncursesw\.so\. ]] || [[ "$filename" =~ ^libtinfo\.so\. ]]; then
+                    smart_copy "$so_file" "$lib_path/$filename" "$runtime_pkg_name"
+                else
+                    smart_copy "$so_file" "$usr_lib_path/$filename" "$runtime_pkg_name"
+                fi
+            done
 
-        # 复制共享库的符号链接 (*.so.*)
-        find "$install_dir/usr/lib" -type l -name "*.so.*" | while read link; do
-            smart_copy "$link" "$pkg_dir/lib/arm-linux-gnueabi/$(basename "$link")" "$runtime_pkg_name"
-        done
+            # 处理符号链接
+            find "$install_dir/usr/lib" -type l -name "*.so.*" | while read link; do
+                filename=$(basename "$link")
+                if [[ "$filename" =~ ^libncursesw\.so\. ]] || [[ "$filename" =~ ^libtinfo\.so\. ]]; then
+                    smart_copy "$link" "$lib_path/$filename" "$runtime_pkg_name"
+                else
+                    smart_copy "$link" "$usr_lib_path/$filename" "$runtime_pkg_name"
+                fi
+            done
+        else
+            local target_path=""
+            if [ -n "$lib_path" ]; then
+                target_path="$lib_path"
+            else
+                target_path="$usr_lib_path"
+            fi
+
+            # 复制实际的共享库文件 (.so*)
+            find "$install_dir/usr/lib" -type f -name "*.so*" -not -name "*.a" -not -name "*.la" | while read so_file; do
+                smart_copy "$so_file" "$target_path/$(basename "$so_file")" "$runtime_pkg_name"
+            done
+
+            # 复制共享库的符号链接 (*.so.*)
+            find "$install_dir/usr/lib" -type l -name "*.so.*" | while read link; do
+                smart_copy "$link" "$target_path/$(basename "$link")" "$runtime_pkg_name"
+            done
+        fi
     fi
 
     # 计算安装大小
-    local installed_size=$(du -sk "$pkg_dir/lib" | cut -f1)
+    local installed_size=0
+    if [ -d "$pkg_dir/lib" ]; then
+        installed_size=$((installed_size + $(du -sk "$pkg_dir/lib" | cut -f1)))
+    fi
+    if [ -d "$pkg_dir/usr" ]; then
+        installed_size=$((installed_size + $(du -sk "$pkg_dir/usr" | cut -f1)))
+    fi
 
     # 创建控制文件
     log_info "Creating control file..."
@@ -342,7 +396,7 @@ clear_packaged_files
 create_runtime_deb "zlib" "1:${ZLIB_VERSION}" "Compression library - runtime" "libc6" "zlib1g"
 create_dev_deb "zlib" "1:${ZLIB_VERSION}" "Compression library" "libc6,zlib1g (= 1:${ZLIB_VERSION}+spams1)" "zlib1g"
 
-# 2. OpenSSL - 分为libssl3运行时库，libcrypto3运行时库，以及libssl-dev开发包和openssl二进制工具包
+# 2. OpenSSL
 clear_packaged_files
 create_runtime_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - libssl runtime" "libc6,libatomic1" "libssl3"
 create_dev_deb "openssl" "${OPENSSL_VERSION}" "Secure Sockets Layer toolkit - development files" "libc6,libssl3 (= ${OPENSSL_VERSION}+spams1)" "libssl"
