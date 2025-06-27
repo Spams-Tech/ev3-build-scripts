@@ -446,6 +446,14 @@ clear_packaged_files
 create_runtime_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - runtime libraries" "libc6" "libuuid1"
 create_dev_deb "util-linux" "${UTIL_LINUX_VERSION}" "miscellaneous system utilities - development files" "libc6,libuuid1 (= ${UTIL_LINUX_VERSION}+spams1)" "uuid"
 
+cd "$CROSS_BASE/packages/"
+for file in *:*.deb; do
+    if [ -f "$file" ]; then
+        new_name=$(echo "$file" | sed 's/:/_/g')
+        mv "$file" "$new_name"
+        log_info "Renamed: $file -> $new_name"
+    fi
+done
 log_success "All DEB packages created successfully!"
 log_info "Packages location: $CROSS_BASE/packages/"
 ls -la "$CROSS_BASE/packages/"*.deb
