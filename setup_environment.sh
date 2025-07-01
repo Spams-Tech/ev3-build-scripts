@@ -57,7 +57,7 @@ export CROSS_RANLIB=arm-ev3-linux-gnueabi-ranlib
 export CROSS_FC=arm-ev3-linux-gnueabi-gfortran
 
 # 通用编译参数
-export CFLAGS="-O2 -mcpu=arm926ej-s"
+export CFLAGS="-O3 -mcpu=arm926ej-s"
 export CXXFLAGS="$CFLAGS"
 
 log_success "Environment setup completed!"
